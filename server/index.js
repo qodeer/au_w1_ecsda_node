@@ -1,16 +1,13 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const port = 3042;
+const { createAccount, getPublicKeyFromSignature } = require('./cryptography');
+const port = 3043;
 
 app.use(cors());
 app.use(express.json());
 
-const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
-};
+const balances = {};
 
 app.get("/balance/:address", (req, res) => {
   const { address } = req.params;
@@ -19,10 +16,18 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+  const { signedMessage, signature } = req.body;
+  const { recipient, amount } = signedMessage;
 
-  setInitialBalance(sender);
-  setInitialBalance(recipient);
+  const sender = getPublicKeyFromSignature(signedMessage, signature); 
+  if(!balances[sender]) {
+    res.status(400).send({ message: "Sender not exists" });
+  return;
+  }
+  if(!balances[recipient]) {
+    res.status(400).send({ message: "Recipient not exists" });
+return;
+  }
 
   if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
@@ -33,12 +38,14 @@ app.post("/send", (req, res) => {
   }
 });
 
+app.post('/account', (_, res) => { 
+
+  const account = createAccount();
+  balances[account.publicKey] = 100; 
+
+  res.send(account);
+});
+
 app.listen(port, () => {
   console.log(`Listening on port ${port}!`);
 });
-
-function setInitialBalance(address) {
-  if (!balances[address]) {
-    balances[address] = 0;
-  }
-}

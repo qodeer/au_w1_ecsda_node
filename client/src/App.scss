@@ -59,8 +59,14 @@ input {
   letter-spacing: 1px;
   font-weight: 400;
   font-size: .9em;
+
   &:hover {
     cursor: pointer;
+  }
+
+  &:disabled {
+    background-color: #929292;
+    cursor: auto
   }
 }
 

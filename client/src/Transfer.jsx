@@ -1,53 +1,71 @@
 import { useState } from "react";
 import server from "./server";
 
-function Transfer({ address, setBalance }) {
+function Transfer({ signature, setBalance, setMessage, message, clearSignature }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
 
   const setValue = (setter) => (evt) => setter(evt.target.value);
 
-  async function transfer(evt) {
+  async function connectWallet(evt) {
     evt.preventDefault();
 
+    setMessage({
+      amount: parseInt(sendAmount),
+      recipient,
+    })
+  }
+
+  async function transfer() {
     try {
       const {
         data: { balance },
       } = await server.post(`send`, {
-        sender: address,
-        amount: parseInt(sendAmount),
-        recipient,
+        signature,
+        signedMessage: message
       });
       setBalance(balance);
+      clearSignature();
+      setMessage("");
     } catch (ex) {
       alert(ex.response.data.message);
     }
   }
 
   return (
-    <form className="container transfer" onSubmit={transfer}>
-      <h1>Send Transaction</h1>
+    <div className="container transfer">
+      <form onSubmit={connectWallet}>
+        <h1>Send Transaction</h1>
 
+        <label>
+          Send Amount
+          <input
+            disabled={!!signature}
+            placeholder="1, 2, 3..."
+            value={sendAmount}
+            onChange={setValue(setSendAmount)}
+          ></input>
+        </label>
+
+        <label>
+          Recipient
+          <input
+            disabled={!!signature}
+            placeholder="Type an address, for example: 0x2"
+            value={recipient}
+            onChange={setValue(setRecipient)}
+          ></input>
+        </label>
+
+
+        <input disabled={!!signature}
+          type="submit" className="button" value={!signature ? "Connect wallet" : "Connected"} />
+      </form>
       <label>
-        Send Amount
-        <input
-          placeholder="1, 2, 3..."
-          value={sendAmount}
-          onChange={setValue(setSendAmount)}
-        ></input>
+        <button disabled={!signature} className='button' onClick={transfer}>Transfer</button>
       </label>
+    </div>
 
-      <label>
-        Recipient
-        <input
-          placeholder="Type an address, for example: 0x2"
-          value={recipient}
-          onChange={setValue(setRecipient)}
-        ></input>
-      </label>
-
-      <input type="submit" className="button" value="Transfer" />
-    </form>
   );
 }
 
